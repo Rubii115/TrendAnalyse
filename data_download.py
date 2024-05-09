@@ -5,6 +5,7 @@ i use this program to download candledata and save them
 from binance.spot import Spot
 import pandas as pd
 from datetime import datetime
+import os
 
 # 只是下载数据，不需要输入您的API Key和Secret Key
 client = Spot()
@@ -39,5 +40,10 @@ df['date'] = pd.to_datetime(df['timestamp'], unit='ms')
 # 删除无用的列
 df = df.drop(['timestamp', 'close_time', 'quote_asset_volume', 'number_of_trades', 'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'], axis=1)
 
+#如果没有Candle_data/文件夹就创建一个
+folder_name = 'Candle_data'
+if not os.path.exists(folder_name):
+    os.makedirs(folder_name)
+
 # 将数据保存为CSV文件
-df.to_csv('Candle_data/'+interval+'history_data.csv', index=False)
+df.to_csv(folder_name +'/'+interval+'history_data.csv', index=False)
