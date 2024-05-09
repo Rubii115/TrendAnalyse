@@ -63,6 +63,7 @@ class Analyse_area:
     def add_trend(self, trend_to_add: Trend):
         #按理说趋势合并应该有非常简洁的表达，但是这个函数如此丑陋的核心原因就是趋势可能不连贯，存在跳变
         #用了很多迭代，希望不要爆栈
+        #其实我想到了一个更简洁优美的写法，在我忘掉这堆屎山细节之前，尽早更新上去
         if len(self._trendlist) == 0:
             self._trendlist.append(trend_to_add)
             return
