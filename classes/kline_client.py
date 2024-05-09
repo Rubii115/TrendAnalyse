@@ -33,5 +33,5 @@ class Kline_client:
         # 获取指定时间段的k线数据列表
         begintime_pd = begintime.get_pdtimepoint()
         endtime_pd = endtime.get_pdtimepoint()
-        df = self.df.loc[begintime_pd:endtime_pd + timedelta(minutes=1)]
+        df = self.df.loc[begintime_pd:endtime_pd]
         return df 
