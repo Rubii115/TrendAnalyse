@@ -1,21 +1,22 @@
 '''
 i use this program to download candledata and save them
 '''
-
+print('downloading process preparing')
 from binance.spot import Spot
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 # 只是下载数据，不需要输入您的API Key和Secret Key
 client = Spot()
+print('binance connected')
 
 # 输入您要获取历史数据的虚拟货币
 symbol = 'BTCUSDT'
 interval='1m'
 
 # 输入您要获取历史数据的时间范围
-date_string = '2019-01-01T00:00:00Z'
+date_string = '2023-01-01T00:00:00Z'
 date_object = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
 start = int(date_object.timestamp() * 1000)
 
@@ -29,7 +30,9 @@ while len(klines)>1:
     if klines_all[-1][0] == klines[0][0]:
         klines = klines[1:]
     klines_all+=klines
-    print(datetime.utcfromtimestamp(klines_all[-1][0]/1000))
+    timestamp = klines_all[-1][0] / 1000
+    utc_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    print(utc_time, 'downloaded')
 
 # 将数据转换为Pandas数据框
 df = pd.DataFrame(klines_all, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_asset_volume', 'number_of_trades', 'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'])
