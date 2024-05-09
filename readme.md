@@ -158,8 +158,10 @@ pds.draw(area,layer = 3)
 ```
 
 
+
+
     
-![png](readme_files/readme_17_1.png)
+![png](demo_files/demo_17_1.png)
     
 
 
@@ -173,7 +175,7 @@ pds.draw(area,layer = 1)
 
 
     
-![png](readme_files/readme_19_1.png)
+![png](demo_files/demo_19_1.png)
     
 
 
@@ -183,8 +185,10 @@ pds.draw(area,layer = 5)
 ```
 
 
+
+
     
-![png](readme_files/readme_20_1.png)
+![png](demo_files/demo_20_1.png)
     
 
 
@@ -196,8 +200,11 @@ area.synchronize(Timepoint(2022,3,9,12,31))
 pds.draw(area,layer = 3)
 ```
 
+
+
+
     
-![png](readme_files/readme_22_1.png)
+![png](demo_files/demo_22_1.png)
     
 
 
@@ -208,6 +215,7 @@ pds.draw(area,layer = 3)
 begin = Timepoint(2022,3,5,12,31)
 point = begin.get_after(1)
 small_area = Analyse_area(begin,point,kline_clt)
+pds = Plot_driver(kline_clt)
 ```
 
 
@@ -220,6 +228,6 @@ pds.draw(small_area,layer = 5)
 
 
     
-![png](readme_files/readme_25_0.png)
+![png](demo_files/demo_25_0.png)
     
 

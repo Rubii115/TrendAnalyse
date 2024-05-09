@@ -147,6 +147,12 @@ class Analyse_area:
             elif len(self._trendlist) > 1 and self._trendlist[-1].begin_price == self._trendlist[-2].end_price:
                 #如果新趋势没破前一个趋势的起始价格
                 if (new_price > self._trendlist[-1].begin_price)^self.pumping:
+                    trend_here = self.trendlist[-1]
+                    while ((trend_here.break_price < new_price)^self.pumping 
+                           and len(trend_here.include_list) != 0):
+                        trend_here = trend_here.include_list[-1]
+                    if not (trend_here.break_price < new_price)^self.pumping:
+                        trend_here.is_sure = True
                     self._trendlist.append(trend_to_add)
                 else:
                     self._trendlist[-1].is_sure = True

@@ -97,11 +97,12 @@ class Trend:
     @property
     def is_sure(self):
         return self._is_sure
+    
     @is_sure.setter
     def is_sure(self, is_sure):
         self._is_sure = is_sure
         for item in self._include_list:
-            item.is_sure = is_sure
+            item.is_sure = True
     
     
     
