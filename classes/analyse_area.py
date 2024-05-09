@@ -3,6 +3,7 @@ from .kline_client import Kline_client
 from .timepoint import Timepoint
 from copy import copy
 from enum import property
+from tqdm import tqdm
 
 class Analyse_area:
     def __init__(self, begin:Timepoint, end:Timepoint, kline_clt:Kline_client):
@@ -17,12 +18,16 @@ class Analyse_area:
         self.synchronize(end)
 
     def synchronize(self, new_time:Timepoint):
+        print('analysing area synchronizing...')
+        progress_bar = tqdm(total=(new_time.get_pdtimepoint() - self.end.get_pdtimepoint()).total_seconds()/60)
         while self.end < new_time:
             self.end.next()
             newkline = self.kline_client.get_kline(self.end)
             if newkline['high'] == newkline['low']:
                 newkline['high'] += 0.01
             self.add_kline(newkline)
+            progress_bar.update(1)
+        progress_bar.close()
             
 
     def add_kline(self, kline):
