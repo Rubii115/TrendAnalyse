@@ -79,7 +79,9 @@ class Analyse_area:
         #如果趋势与前一个趋势不连贯
         if trend_to_add.begin_price != self._trendlist[-1].end_price:
             #如果新趋势把前一个趋势的起始价格破了
-            if (backed_price >= self._trendlist[-1].begin_price)^self.pumping:
+            if (((backed_price<self._trendlist[-1].begin_price)and(self.pumping))
+                or((backed_price>self._trendlist[-1].begin_price)and(not self.pumping))):
+            #(backed_price >= self._trendlist[-1].begin_price)^self.pumping:
                 self._trendlist[-1].is_sure = True
                 #如果前一个趋势和前前个趋势也不连贯
                 if len(self._trendlist) > 1 and self._trendlist[-1].begin_price != self._trendlist[-2].end_price:
@@ -124,7 +126,8 @@ class Analyse_area:
             #如果前一个趋势和前前个趋势不连贯
             if len(self._trendlist) > 1 and self._trendlist[-1].begin_price != self._trendlist[-2].end_price:
                 #如果新趋势破了前一个趋势的起始价格
-                if (new_price < self._trendlist[-1].begin_price)^self.pumping:
+                if (((new_price > self._trendlist[-1].begin_price)and(self.pumping))
+                    or((new_price < self._trendlist[-1].begin_price)and(not self.pumping))):#(new_price < self._trendlist[-1].begin_price)^self.pumping:
                     self._trendlist[-1].is_sure = True
                     new_trend = Trend([self._trendlist[-1],trend_to_add])
                     new_trend.break_price = trend_to_add.begin_price
@@ -139,7 +142,8 @@ class Analyse_area:
             elif (len(self._trendlist) > 1 
                   and self._trendlist[-1].begin_price == self._trendlist[-2].end_price):
                   self._trendlist[-1].is_sure_confirm(new_price, self.pumping)
-                  if (backed_price < self._trendlist[-2].begin_price)^self.pumping:
+                  if (((backed_price>self._trendlist[-2].begin_price)and(self.pumping))
+                      or((backed_price<self._trendlist[-2].begin_price)and(not self.pumping))):#(backed_price < self._trendlist[-2].begin_price)^self.pumping:
                     blankTrend = Trend([])
                     res = self._trendlist[-2].add_trendpair([self._trendlist[-1],trend_to_add],
                                                             backed_price,
