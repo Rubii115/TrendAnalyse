@@ -35,40 +35,42 @@ class Analyse_area:
         trend_to_add = Trend([])
         k_pre = self.k_newest
         k_now = kline
+        trend_to_add.is_sure = True
         if k_now['high'] > k_pre['high'] and k_now['low'] > k_pre['low']:
             self.pumping= True
+            trend_to_add.break_price = k_now['high']
             trend_to_add.set(begin_time=self.end.get_before(), 
                                 end_time=self.end, 
                                 begin_price=k_pre['low'], 
                                 end_price=k_now['high'])
         elif k_now['high'] < k_pre['high'] and k_now['low'] < k_pre['low']:
             self.pumping = False
+            trend_to_add.break_price = k_now['low']
             trend_to_add.set(begin_time=self.end.get_before(), 
                                 end_time=self.end, 
                                 begin_price=k_pre['high'], 
                                 end_price=k_now['low'])
         else:
             if self.pumping:
+                trend_to_add.break_price = k_now['low']
                 trend_to_add.set(begin_time=self.end.get_before(), 
                                     end_time=self.end, 
                                     begin_price=k_pre['high'], 
                                     end_price=k_now['low'])
                 self.pumping = False
             else:
+                trend_to_add.break_price = k_now['high']
                 trend_to_add.set(begin_time=self.end.get_before(), 
                                     end_time=self.end, 
                                     begin_price=k_pre['low'], 
                                     end_price=k_now['high'])
                 self.pumping = True
         self.k_newest = copy(k_now)
-        trend_to_add.is_sure = True
-        trend_to_add.break_price = trend_to_add.end_price
         self.add_trend(trend_to_add)
 
     def add_trend(self, trend_to_add: Trend):
         #按理说趋势合并应该有非常简洁的表达，但是这个函数如此丑陋的核心原因就是趋势可能不连贯，存在跳变
         #用了很多迭代，希望不要爆栈
-        #其实我想到了一个更简洁优美的写法，在我忘掉这堆屎山细节之前，尽早更新上去
         if len(self._trendlist) == 0:
             self._trendlist.append(trend_to_add)
             return
@@ -77,7 +79,7 @@ class Analyse_area:
         #如果趋势与前一个趋势不连贯
         if trend_to_add.begin_price != self._trendlist[-1].end_price:
             #如果新趋势把前一个趋势的起始价格破了
-            if (backed_price > self._trendlist[-1].begin_price)^self.pumping:
+            if (backed_price >= self._trendlist[-1].begin_price)^self.pumping:
                 self._trendlist[-1].is_sure = True
                 #如果前一个趋势和前前个趋势也不连贯
                 if len(self._trendlist) > 1 and self._trendlist[-1].begin_price != self._trendlist[-2].end_price:
@@ -85,54 +87,38 @@ class Analyse_area:
                     self.add_trend(trend_to_add)
                 #或者前一个趋势和前前个趋势连贯
                 elif len(self._trendlist) > 1 and self._trendlist[-1].begin_price == self._trendlist[-2].end_price:
-                    #如果前一个趋势没把前前个趋势破了，就直接把前一个趋势加到前前趋势里
-                    if (self._trendlist[-1].end_price > self._trendlist[-2].break_price)^self.pumping:
-                        self._trendlist[-2].add_trendpair([self._trendlist[-1]],self._trendlist[-1].end_price,backed_price)
-                        # self._trendlist[-2].include_list_add(self._trendlist[-1])
-                        # self._trendlist[-2].set(end_price=backed_price)
-                        new_trend = self._trendlist[-2]
-                        self._trendlist.pop()
-                        self._trendlist.pop()
-                        self.pumping = not self.pumping
-                        self.add_trend(new_trend)
-                        self.pumping = not self.pumping
-                        self.add_trend(trend_to_add)
-                    else:
-                        self._trendlist[-2].is_sure = True
-                        new_trend = Trend([self._trendlist[-2],self._trendlist[-1]])
-                        new_trend.set(begin_price=self._trendlist[-2].begin_price,end_price=backed_price)
-                        new_trend.break_price = self._trendlist[-1].end_price
-                        self._trendlist.pop()
-                        self._trendlist.pop()
-                        self.pumping = not self.pumping
-                        self.add_trend(new_trend)
-                        self.pumping = not self.pumping
-                        self.add_trend(trend_to_add)
+                    blankTrend = Trend([])
+                    res = self._trendlist[-2].add_trendpair([self._trendlist[-1]],
+                                                            self._trendlist[-1].end_price,
+                                                            backed_price,
+                                                            not self.pumping,
+                                                            blankTrend)
+                    self._trendlist.pop()
+                    self._trendlist.pop()
+                    self.pumping = not self.pumping
+                    self.add_trend(res)
+                    self.pumping = not self.pumping
+                    self.add_trend(trend_to_add)
                 elif len(self._trendlist) < 2:
-                    if (backed_price > self._trendlist[-1].break_price)^self.pumping:
-                        self._trendlist[-1].is_sure = True
                     self._trendlist.append(trend_to_add)
                 else:
                     raise ValueError('add_trend position 1 error')
             #如果新趋势没超过前一个趋势的结束价格
-            elif (new_price > self._trendlist[-1].end_price)^self.pumping:
-                if (backed_price > self._trendlist[-1].break_price)^self.pumping:
-                    self._trendlist[-1].is_sure = True
-                self._trendlist.append(trend_to_add)
+            # elif (new_price > self._trendlist[-1].end_price)^self.pumping:
+            #     self._trendlist[-1].is_sure_confirm(backed_price,not self.pumping)
+            #     self._trendlist.append(trend_to_add)
             else:
-                #如果新趋势没破前一个趋势
-                if (backed_price < self._trendlist[-1].break_price)^self.pumping:
-                    self._trendlist[-1].add_trendpair([trend_to_add],backed_price,new_price)
-                    new_trend = self._trendlist[-1]
-                    self._trendlist.pop()
-                    self.add_trend(new_trend)
+                blankTrend = Trend([])
+                res = self._trendlist[-1].add_trendpair([trend_to_add],
+                                                        backed_price,
+                                                        new_price,
+                                                        self.pumping,
+                                                        blankTrend)
+                if res is None:
+                    self._trendlist.append(trend_to_add)
                 else:
-                    self._trendlist[-1].is_sure = True
-                    new_trend = Trend([self._trendlist[-1],trend_to_add])
-                    new_trend.set(begin_price=self._trendlist[-1].begin_price,end_price=new_price)
-                    new_trend.break_price = backed_price
                     self._trendlist.pop()
-                    self.add_trend(new_trend)
+                    self.add_trend(res)
 
         else:
             #如果前一个趋势和前前个趋势不连贯
@@ -141,46 +127,37 @@ class Analyse_area:
                 if (new_price < self._trendlist[-1].begin_price)^self.pumping:
                     self._trendlist[-1].is_sure = True
                     new_trend = Trend([self._trendlist[-1],trend_to_add])
+                    new_trend.break_price = trend_to_add.begin_price
                     new_trend.set(begin_price=self._trendlist[-2].end_price, end_price=new_price)
-                    new_trend.break_price = backed_price
                     self._trendlist.pop()
                     self.add_trend(new_trend)
                 else:
-                    if (backed_price > self._trendlist[-1].break_price)^self.pumping:
-                        self._trendlist[-1].is_sure = True
+                    self._trendlist[-1].is_sure_confirm(trend_to_add.end_price,
+                                                        self.pumping)
                     self._trendlist.append(trend_to_add)
             #如果前一个趋势和前前个趋势连贯
-            elif len(self._trendlist) > 1 and self._trendlist[-1].begin_price == self._trendlist[-2].end_price:
-                #如果新趋势没破前一个趋势的起始价格
-                if (new_price > self._trendlist[-1].begin_price)^self.pumping:
-                    trend_here = self.trendlist[-1]
-                    while ((trend_here.break_price < new_price)^self.pumping 
-                           and len(trend_here.include_list) != 0):
-                        trend_here = trend_here.include_list[-1]
-                    if not (trend_here.break_price < new_price)^self.pumping:
-                        trend_here.is_sure = True
-                    self._trendlist.append(trend_to_add)
-                else:
-                    self._trendlist[-1].is_sure = True
-                    if ( backed_price > self._trendlist[-2].begin_price)^self.pumping:
+            elif (len(self._trendlist) > 1 
+                  and self._trendlist[-1].begin_price == self._trendlist[-2].end_price):
+                  self._trendlist[-1].is_sure_confirm(new_price, self.pumping)
+                  if (backed_price < self._trendlist[-2].begin_price)^self.pumping:
+                    blankTrend = Trend([])
+                    res = self._trendlist[-2].add_trendpair([self._trendlist[-1],trend_to_add],
+                                                            backed_price,
+                                                            new_price,
+                                                            self.pumping,
+                                                            blankTrend)
+                    if res is None:
+                        self._trendlist[-1].is_sure_confirm(new_price, self.pumping)
                         self._trendlist.append(trend_to_add)
-                    #如果前前个趋势已经被破了
-                    elif (backed_price > self._trendlist[-2].break_price)^self.pumping:
-                        self._trendlist[-2].is_sure = True
-                        new_trend = Trend([self._trendlist[-2],self._trendlist[-1],trend_to_add])
-                        new_trend.break_price = backed_price
-                        self._trendlist.pop()
-                        self._trendlist.pop()
-                        self.add_trend(new_trend)
                     else:
-                        self._trendlist[-2].add_trendpair([self._trendlist[-1],trend_to_add],backed_price,new_price)
-                        new_trend = self._trendlist[-2]
                         self._trendlist.pop()
                         self._trendlist.pop()
-                        self.add_trend(new_trend)
+                        self.add_trend(res)
+                  else:
+                      self._trendlist.append(trend_to_add)
             elif len(self._trendlist) < 2:
-                if (new_price < self._trendlist[-1].break_price)^self.pumping:
-                    self._trendlist[-1].is_sure = True
+                self._trendlist[-1].is_sure_confirm(new_price,
+                                                    self.pumping)
                 self._trendlist.append(trend_to_add)
             else:
                 raise ValueError('add_trend position 2 error')
