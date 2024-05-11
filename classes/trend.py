@@ -30,13 +30,12 @@ class Trend:
             self._begin_price = begin_price
         if end_price is not None:
             self._end_price = end_price
-            if ((self._end_price - self._begin_price) != 0
-                and (self.break_price - self._begin_price)/(self._end_price - self._begin_price) < self.max_back 
-                and len(self.include_list) > 1
-                and self._end_price == self._include_list[-1].end_price):
+            # if ((self._end_price - self._begin_price) != 0
+            #     and (self.break_price - self._begin_price)/(self._end_price - self._begin_price) < self.max_back 
+            #     and len(self.include_list) > 1
+            #     and self._end_price == self._include_list[-1].end_price):
 
-                self._include_list[-1].kill()
-
+            #     self._include_list[-1].kill()
             if self.father_trend is not None:
                 self.father_trend.set(end_price = end_price)
 
@@ -78,11 +77,11 @@ class Trend:
 
     def add_trendpair(self, trends, backed, new, pump, blankTrend):
         #先判断趋势对有没有继承自己的趋势:
-        is_continue = ((new>self.end_price)and(pump))or((new<self.end_price)and(not pump))#(new < self.end_price)^pump
+        is_continue = ((new < self.end_price)^pump)#(new>=self.end_price)and(pump))or((new<=self.end_price)and(not pump)
         #然后判断自己哪个子趋势被破了
         consider_trend = self
-        while (((backed>consider_trend.break_price)and(pump)
-               or (backed<consider_trend.break_price)and(not pump))#(pump^(backed < consider_trend.break_price)
+        while ((#(backed>consider_trend.break_price)and(pump)
+               pump^(backed < consider_trend.break_price))#or (backed<consider_trend.break_price)and(not pump))#(
                and consider_trend.is_sure == False):
             consider_trend = consider_trend.include_list[-1]
         consider_trend.is_sure = True
@@ -92,6 +91,7 @@ class Trend:
             for item in trends:
                 consider_trend.father_trend.include_list_add(item)
             consider_trend.father_trend.set(end_price=new)
+            self.examine_layers()
             return self
         elif (is_continue and 
             consider_trend.father_trend is None):
@@ -100,6 +100,7 @@ class Trend:
             for item in trends:
                 blankTrend.include_list_add(item)
             blankTrend.set(end_price = new)
+            blankTrend.examine_layers()
             return blankTrend
         elif not is_continue:
             return None
@@ -107,57 +108,86 @@ class Trend:
             raise Exception("trend add trendpair error")
             
 
-    def kill(self):
+    def examine_layers(self):
         #非常丑但是又很核心的代码，我对他情感很复杂
-        endpricebackup = self.end_price
-        if len(self._include_list) == 0:
-            return
-        if self.begin_price == self.father_trend.include_list[-2].end_price:
-            high = self.father_trend.include_list[-2].begin_price
-        else:
-            high = self.father_trend.include_list[-1].end_price
+        consider_trend = self
+        #找到底层trend
+        while len(consider_trend.include_list)>0:
+            consider_trend = consider_trend.include_list[-1]
+        while consider_trend.father_trend is not None:
+            if ((((consider_trend.father_trend.break_price - consider_trend.father_trend.begin_price)
+                /(consider_trend.father_trend.end_price - consider_trend.father_trend.begin_price)) < self.max_back)
+                and consider_trend.end_price == self.end_price):
 
-        trend_list = []
+                endpricebackup = consider_trend.father_trend.end_price
+                breakpricebackup = consider_trend.break_price
+
+                if consider_trend.begin_price != consider_trend.father_trend.include_list[-2].end_price:
+                    pre_high = consider_trend.father_trend.include_list[-2].end_price
+                else:
+                    pre_high = consider_trend.father_trend.include_list[-2].begin_price
+
+                newtrends = consider_trend.trend_pair_pop(pre_high)
+                consider_trend.is_sure = True
+
+                for item in newtrends:
+                    consider_trend.father_trend.include_list_add(item)
+                consider_trend.father_trend.set(end_price=endpricebackup)
+                if len(newtrends) > 0:
+                    consider_trend.father_trend.break_price = breakpricebackup
+            consider_trend = consider_trend.father_trend
+
+
+
+
+    def trend_pair_pop(self,pricelim):
+        if len(self._include_list) == 0:
+            return []
+        if self.begin_price < self.end_price:
+            firsthigh = max(self.include_list[0].begin_price,self.include_list[0].end_price)
+        else:
+            firsthigh = min(self.include_list[0].begin_price,self.include_list[0].end_price)
+        if (((pricelim<firsthigh)and(self.begin_price < self.end_price))
+            or ((pricelim>firsthigh)and(self.begin_price > self.end_price))):
+            for item in self.include_list:
+                item.father_trend = self.father_trend
+            return self.include_list
+        trendlist = []
         canreduce = True
+        
         while canreduce:
             reduceone = True
-            remember_to_change_end = False
             if self.end_price != self.include_list[-1].end_price:
                 pre_high = self.include_list[-1].begin_price 
             elif self.include_list[-1].begin_price != self.include_list[-2].end_price:
                 pre_high = self.include_list[-2].end_price
-                remember_to_change_end = True
             else:
                 pre_high = self.include_list[-2].begin_price
                 reduceone = False
             
-            if ((high < pre_high)and(self.begin_price < self.end_price)
-                or((high > pre_high)and(self.begin_price > self.end_price))):
-                trend_list.insert(0,self.include_list[-1])
-                self.include_list_pop()
+            if ((pricelim < pre_high)and(self.begin_price < self.end_price)
+                or((pricelim > pre_high)and(self.begin_price > self.end_price))):
+                trendlist.insert(0,self.include_list[-1])
+                self.include_list[-1].father_trend = self.father_trend
+                self._include_list.pop()
                 if not reduceone:
-                    trend_list.insert(0,self.include_list[-1])
-                    self.include_list_pop()
-                if remember_to_change_end:
-                    self._end_price = self.include_list[-1].end_price
+                    trendlist.insert(0,self.include_list[-1])
+                    self.include_list[-1].father_trend = self.father_trend
+                    self._include_list.pop()
+                self.set(end_price=pre_high,end_time=self.include_list[-1].end_time)
+                if self.end_price != self.include_list[-1].end_price:
+                    self.break_price = self.include_list[-1].end_price
+                else:
+                    self.break_price = self.include_list[-1].begin_price
             else:
                 canreduce = False
+        return trendlist
 
-        self.father_trend.break_price = self.break_price
-        for item in trend_list:
-            self.father_trend.include_list_forced_add(item)
-
-    def include_list_pop(self):
-        # self.set(end_price=self._include_list[-1].end_price,
-        #          end_time=self._include_list[-1].end_time)
-        self._end_price = self._include_list[-1].begin_price
-        self._end_time = copy(self._include_list[-1].begin_time)
-        self._include_list.pop()
         
     def is_sure_confirm(self,backed,pump):
         consider_trend = self
-        while ((((backed<consider_trend.break_price)and(pump))
-               or(backed>consider_trend.break_price)and(not pump))#pump^(backed > consider_trend.break_price)
+        while ((#((backed<consider_trend.break_price)and(pump))
+               pump^(backed > consider_trend.break_price))#or(backed>consider_trend.break_price)and(not pump)
                and consider_trend.is_sure == False):
             consider_trend = consider_trend._include_list[-1]
         consider_trend.is_sure = True
@@ -200,8 +230,10 @@ class Trend:
         self._is_sure = is_sure
         for item in self._include_list:
             item.is_sure = True
-    
-    
+
     
     def __str__(self) -> str:
         return f"{self._begin_time} to {self._end_time}, {self._begin_price} to {self._end_price}"
+    
+
+    
