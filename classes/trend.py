@@ -91,20 +91,20 @@ class Trend:
             # if (((backed - consider_trend.father_trend.begin_price)
             #     /(consider_trend.father_trend.end_price - consider_trend.father_trend.begin_price)) < self.min_back):
             # consider_trend.father_trend.break_price = backed
-            consider_trend.break_price_update()
             for item in trends:
                 consider_trend.father_trend.include_list_add(item)
             consider_trend.father_trend.set(end_price=new)
+            consider_trend.father_trend.break_price_update()
             self.examine_layers()
             return self
         elif (is_continue and 
             consider_trend.father_trend is None):
             blankTrend.include_list_add(self)
             # blankTrend.break_price = backed
-            blankTrend.break_price_update()
             for item in trends:
                 blankTrend.include_list_add(item)
             blankTrend.set(end_price = new)
+            blankTrend.break_price_update()
             blankTrend.examine_layers()
             return blankTrend
         elif not is_continue:
@@ -125,7 +125,7 @@ class Trend:
                 and consider_trend.end_price == self.end_price):
 
                 endpricebackup = consider_trend.father_trend.end_price
-                breakpricebackup = consider_trend.break_price
+                # breakpricebackup = consider_trend.break_price
 
                 if consider_trend.begin_price != consider_trend.father_trend.include_list[-2].end_price:
                     pre_high = consider_trend.father_trend.include_list[-2].end_price
@@ -156,20 +156,16 @@ class Trend:
             pricelist.append(item.end_price)
         if self.end_price != pricelist[-1]:
             pricelist.append(self.end_price)
-        if len(pricelist)%2 != 0:
-            print(self)
-            for item in self.include_list:
-                print(item)
-            print(pricelist)
-            raise(ValueError('pricelist is not even'))
         index = len(pricelist) - 2
         while (((pricelist[index] - self.begin_price)/(self.end_price - self.begin_price) > self.min_back)
                 and index > 1):
             index -= 2
         if index == len(pricelist)-1:
-            self.break_price = self.begin_price + self.min_back*(self.end_price - self.begin_price)
+            self.break_price = self.begin_price + 0.9*(self.end_price - self.begin_price)
         else:
             self.break_price = pricelist[index]
+
+        # self.break_price = pricelist[-2]
 
         
 
