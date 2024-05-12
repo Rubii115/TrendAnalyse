@@ -4,6 +4,7 @@ from copy import copy, deepcopy
 
 class Trend:
     max_back = 0.236
+    min_back = 0.618
     def __init__(self, trends):
         self._include_list = []
         self._father_trend = None
@@ -87,7 +88,10 @@ class Trend:
         consider_trend.is_sure = True
         if (is_continue and 
             consider_trend.father_trend is not None):
-            consider_trend.father_trend.break_price = backed
+            # if (((backed - consider_trend.father_trend.begin_price)
+            #     /(consider_trend.father_trend.end_price - consider_trend.father_trend.begin_price)) < self.min_back):
+            # consider_trend.father_trend.break_price = backed
+            consider_trend.break_price_update()
             for item in trends:
                 consider_trend.father_trend.include_list_add(item)
             consider_trend.father_trend.set(end_price=new)
@@ -96,7 +100,8 @@ class Trend:
         elif (is_continue and 
             consider_trend.father_trend is None):
             blankTrend.include_list_add(self)
-            blankTrend.break_price = backed
+            # blankTrend.break_price = backed
+            blankTrend.break_price_update()
             for item in trends:
                 blankTrend.include_list_add(item)
             blankTrend.set(end_price = new)
@@ -134,8 +139,41 @@ class Trend:
                     consider_trend.father_trend.include_list_add(item)
                 consider_trend.father_trend.set(end_price=endpricebackup)
                 if len(newtrends) > 0:
-                    consider_trend.father_trend.break_price = breakpricebackup
+                    #consider_trend.father_trend.break_price = breakpricebackup
+                    # if (((breakpricebackup - consider_trend.father_trend.begin_price)
+                    #     /(consider_trend.father_trend.end_price - consider_trend.father_trend.begin_price)) < self.min_back):
+                    #     consider_trend.father_trend.break_price = breakpricebackup
+                    consider_trend.break_price_update()
             consider_trend = consider_trend.father_trend
+
+    def break_price_update(self):
+        if len(self.include_list) == 0:
+            return
+        pricelist = [self.begin_price]
+        for item in self.include_list:
+            if item.begin_price != pricelist[-1]:
+                pricelist.append(item.begin_price)
+            pricelist.append(item.end_price)
+        if self.end_price != pricelist[-1]:
+            pricelist.append(self.end_price)
+        if len(pricelist)%2 != 0:
+            print(self)
+            for item in self.include_list:
+                print(item)
+            print(pricelist)
+            raise(ValueError('pricelist is not even'))
+        index = len(pricelist) - 2
+        while (((pricelist[index] - self.begin_price)/(self.end_price - self.begin_price) > self.min_back)
+                and index > 1):
+            index -= 2
+        if index == len(pricelist)-1:
+            self.break_price = self.begin_price + self.min_back*(self.end_price - self.begin_price)
+        else:
+            self.break_price = pricelist[index]
+
+        
+
+        
 
 
 

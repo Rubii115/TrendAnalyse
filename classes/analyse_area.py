@@ -133,7 +133,8 @@ class Analyse_area:
                     #or((new_price <= self._trendlist[-1].begin_price)and(not self.pumping))):#
                     self._trendlist[-1].is_sure = True
                     new_trend = Trend([self._trendlist[-1],trend_to_add])
-                    new_trend.break_price = trend_to_add.begin_price
+                    # new_trend.break_price = trend_to_add.begin_price
+                    new_trend.break_price_update()
                     new_trend.set(begin_price=self._trendlist[-2].end_price, end_price=new_price)
                     new_trend.examine_layers()
                     self._trendlist.pop()
