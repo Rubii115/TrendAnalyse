@@ -161,7 +161,7 @@ class Trend:
                 and index > 1):
             index -= 2
         if index == len(pricelist)-1:
-            self.break_price = self.begin_price + 0.9*(self.end_price - self.begin_price)
+            self.break_price = self.begin_price + self.min_back*(self.end_price - self.begin_price)
         else:
             self.break_price = pricelist[index]
 
