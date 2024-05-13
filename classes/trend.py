@@ -132,8 +132,10 @@ class Trend:
                 else:
                     pre_high = consider_trend.father_trend.include_list[-2].begin_price
 
-                newtrends = consider_trend.trend_pair_pop(pre_high)
-                consider_trend.is_sure = True
+                newtrends = consider_trend.trend_pair_pop((pre_high-consider_trend.father_trend.begin_price)/self.min_back
+                                                          +consider_trend.father_trend.begin_price)
+                if len(newtrends)>0:
+                    consider_trend.is_sure = True
 
                 for item in newtrends:
                     consider_trend.father_trend.include_list_add(item)

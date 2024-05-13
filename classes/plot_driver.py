@@ -15,8 +15,14 @@ class Plot_driver:
         self.kline_client = kline_clt
         self.config = config
 
-    def draw(self, area : Analyse_area , layer = 3):
-        self.kdata = self.kline_client.get_kline_list(area.begin, area.end)
+    def draw(self, area : Analyse_area ,range_index = None, layer = 3):
+        if range_index is None:
+            range_index = (0,len(area.trendlist))
+        elif len(range_index) == 1:
+            range_index = (range_index[0],len(area.trendlist))
+
+        self.kdata = self.kline_client.get_kline_list(area.trendlist[range_index[0]].begin_time, 
+                                                      area.trendlist[range_index[1]-1].end_time)
         df = self.kdata.copy()
 
         cmap_sure = plt.get_cmap('Blues')
@@ -44,7 +50,7 @@ class Plot_driver:
         seglist = []
         colorlist = []
         
-        for trend in area.trendlist:
+        for trend in area.trendlist[range_index[0]:range_index[1]]:
             segitem, coloritem = getsegs_from_trend(trend, layer)
             seglist = seglist + segitem
             colorlist = colorlist + coloritem
