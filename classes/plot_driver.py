@@ -9,13 +9,14 @@ from .trend import Trend
 from .kline_client import Kline_client
 from .timepoint import Timepoint
 from .analyse_area import Analyse_area
+from .attached_elements import *
 
 class Plot_driver:
     def __init__(self, kline_clt: Kline_client, config=None):
         self.kline_client = kline_clt
         self.config = config
 
-    def draw(self, area : Analyse_area ,range_index = None, layer = 3):
+    def draw(self, area : Analyse_area ,range_index = None, layer = 3, attaches = []):
         if range_index is None:
             range_index = (0,len(area.trendlist))
         elif len(range_index) == 1:
@@ -62,6 +63,13 @@ class Plot_driver:
                      colors=colorlist,
                      linewidths=1)
                      )
+        
+        for attach in attaches:
+            if attach.name == 'Feb_line':
+                self.draw_feb_line(attach)
+
+    def draw_feb_line(self, attach):
+        pass
 
 
 
